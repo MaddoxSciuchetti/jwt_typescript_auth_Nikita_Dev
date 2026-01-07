@@ -8,7 +8,7 @@ import VerifcationCodeModel from "../models/verificationcode.model";
 import appAssert from "../utils/appAssert";
 import { oneYearFromNow } from "../utils/date";
 import jwt from "jsonwebtoken";
-import { sign } from "jsonwebtoken";
+import { refreshTokenSignOptions, signToken } from "../utils/jwt";
 
 
 
@@ -38,10 +38,12 @@ export const createAccount = async (data: createAccountParams) => {
         password: data.password
     })
 
+    const userId = user._id;
+
     // create verification code
 
     const verificationCode = await VerifcationCodeModel.create({
-        userId: user._id,
+        userId,
         type: VerificationCodeType.EmailVerification,
         expiresAt: oneYearFromNow()
     })
@@ -53,7 +55,7 @@ export const createAccount = async (data: createAccountParams) => {
     // create the session
 
     const session = await SessionModal.create({
-        userId: user._id,
+        userId,
         userAgent: data.userAgent
     }); 
 
@@ -61,24 +63,18 @@ export const createAccount = async (data: createAccountParams) => {
     // sign the acess token and refresh token
 
     
-    const refreshToken = jwt.sign(
-        {sessionId: session._id},
-        JWT_REFRESH_SECRET, {
-            audience: ["user"],
-            expiresIn: "30d",
-        }
-    );
-
-
-    const accessToken = jwt.sign(
+    const refreshToken = signToken(
         {
-            userId: user._id,
-            sessionId: session._id},
-        JWT_SECRET, {
-            audience: ["user"],
-            expiresIn: "15m",
-        }
+            sessionId: session._id,
+        },
+        refreshTokenSignOptions
     );
+
+
+    const accessToken = signToken({
+            userId,
+            sessionId: session._id
+        });
 
 
 
@@ -97,7 +93,6 @@ export type LoginParams = {
     password: string,
     userAgent?: string,
 }
-
 
 export const loginUser = async({email, password, userAgent}: LoginParams) => {
     
@@ -123,26 +118,15 @@ export const loginUser = async({email, password, userAgent}: LoginParams) => {
     }
     // sign access token & refresh token
 
-    const refreshToken = jwt.sign(
-        sessionInfo,
-        JWT_REFRESH_SECRET, {
-            audience: ["user"],
-            expiresIn: "30d",
-        }
-    );
-
-    const accessToken = jwt.sign(
+    const refreshToken = signToken( sessionInfo, refreshTokenSignOptions);
+    
+    const accessToken = signToken(
         {
             ...sessionInfo,
-            sessionId: session._id},
-        JWT_SECRET, {
-            audience: ["user"],
-            expiresIn: "15m",
+            userId,
         }
-    );
-
+    )
     // return user & tokens
-
     return {
         user: user.omitPassword(),
         accessToken,

@@ -11,8 +11,7 @@ export interface UserDocument extends mongoose.Document{
     comparePassword(val: string): Promise<string>
     omitPassword(): Pick<
     UserDocument,
-    "_id" | "email" | "verfified" | "createdAt" | "updatedAt" 
-    >;
+    "_id" | "email" | "verfified" | "createdAt" | "updatedAt" >;
 }
 
 const userSchema = new mongoose.Schema<UserDocument>({
