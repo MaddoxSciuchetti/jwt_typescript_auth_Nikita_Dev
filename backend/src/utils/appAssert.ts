@@ -10,13 +10,13 @@ type AppAssert = (
     httpStatusCode: HttpStatusCode,
     message: string,
     appErrorCode?: AppErrorCode
-) => asserts condition
+) => asserts condition;
 
 const appAssert: AppAssert= (
     condition,
     HttpStatusCode,
     message,
     appErrorCode
-) =>assert(condition, new AppError(HttpStatusCode, message, appErrorCode) );
+) =>assert(condition, new AppError(HttpStatusCode, message, appErrorCode));
 
 export default appAssert;
